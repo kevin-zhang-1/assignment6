@@ -12,7 +12,7 @@ export function TreeMap(props) {
         .sum(d => d.value)
         .sort((a, b) => b.value - a.value);
 
-    // ✅ Treemap layout
+    // ✅ Treemap layout (clean subdivision)
     treemap()
         .size([innerWidth, innerHeight])
         .paddingInner(2)
@@ -37,14 +37,12 @@ export function TreeMap(props) {
 
                     return (
                         <g key={i}>
-                            {/* ✅ RECTANGLE */}
+                            {/* ✅ RECTANGLES */}
                             <rect
                                 x={d.x0}
                                 y={d.y0}
                                 width={width}
                                 height={height}
-
-                                // 🔥 ONLY color parent level
                                 fill={
                                     d.depth === 1
                                         ? color(d.data.name)
@@ -53,11 +51,23 @@ export function TreeMap(props) {
                                         : "none"
                                 }
 
-                                // 🔥 ONLY outline parent (big rectangles)
-                                stroke={d.depth === 1 ? "#333" : "none"}
-                                strokeWidth={d.depth === 1 ? 2 : 0}
+                                // ✅ BORDER LOGIC (FIXED)
+                                stroke={
+                                    d.depth === 1
+                                        ? "#333"        // big rectangle border
+                                        : d.depth === 2
+                                        ? "white"       // inner subdivision lines
+                                        : "none"
+                                }
+                                strokeWidth={
+                                    d.depth === 1
+                                        ? 2             // strong outer border
+                                        : d.depth === 2
+                                        ? 1             // subtle inner lines
+                                        : 0
+                                }
 
-                                // ✅ HOVER EFFECT (only for leaf nodes)
+                                // ✅ HOVER (unchanged)
                                 onMouseOver={(e) => {
                                     if (d.depth === 2) {
                                         e.target.setAttribute("fill", "red");
@@ -73,13 +83,13 @@ export function TreeMap(props) {
                                 }}
                             />
 
-                            {/* ✅ BIG LABEL (group label) */}
+                            {/* ✅ BIG GROUP LABEL (e.g., heart_disease: 0) */}
                             {d.depth === 1 && (
                                 <text
                                     x={(d.x0 + d.x1) / 2}
                                     y={(d.y0 + d.y1) / 2}
                                     textAnchor="middle"
-                                    fontSize="28px"
+                                    fontSize="26px"
                                     fill="black"
                                     opacity={0.25}
                                 >
@@ -87,8 +97,8 @@ export function TreeMap(props) {
                                 </text>
                             )}
 
-                            {/* ✅ LEAF TEXT (with percentage) */}
-                            {d.depth === 2 && width > 60 && height > 40 && (
+                            {/* ✅ DETAILED TEXT (leaf nodes) */}
+                            {d.depth === 2 && width > 80 && height > 50 && (
                                 <text
                                     x={d.x0 + 5}
                                     y={d.y0 + 15}
@@ -98,11 +108,32 @@ export function TreeMap(props) {
                                     <tspan x={d.x0 + 5} dy="0">
                                         {d.data.name}
                                     </tspan>
+
+                                    {/* 🔥 Add explanatory attributes */}
+                                    {d.data.gender && (
+                                        <tspan x={d.x0 + 5} dy="1.2em">
+                                            gender: {d.data.gender}
+                                        </tspan>
+                                    )}
+
+                                    {d.data.ever_married && (
+                                        <tspan x={d.x0 + 5} dy="1.2em">
+                                            ever_married: {d.data.ever_married}
+                                        </tspan>
+                                    )}
+
+                                    {d.data.heart_disease !== undefined && (
+                                        <tspan x={d.x0 + 5} dy="1.2em">
+                                            heart_disease: {d.data.heart_disease}
+                                        </tspan>
+                                    )}
+
                                     <tspan x={d.x0 + 5} dy="1.2em">
                                         Value: {d.value}
                                     </tspan>
+
                                     <tspan x={d.x0 + 5} dy="1.2em">
-                                        ({((d.value / root.value) * 100).toFixed(1)}%)
+                                        ({((d.value / d.parent.value) * 100).toFixed(1)}%)
                                     </tspan>
                                 </text>
                             )}
