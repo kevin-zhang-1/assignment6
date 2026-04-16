@@ -7,18 +7,18 @@ export function TreeMap(props) {
     const innerWidth = svg_width - margin.left - margin.right;
     const innerHeight = svg_height - margin.top - margin.bottom;
 
-    // ✅ hierarchy
+    // ✅ Build hierarchy
     const root = hierarchy(tree)
         .sum(d => d.value)
         .sort((a, b) => b.value - a.value);
 
-    // ✅ treemap layout
+    // ✅ Treemap layout
     treemap()
         .size([innerWidth, innerHeight])
         .paddingInner(2)
-        .paddingOuter(4)(root);
+        .paddingOuter(2)(root);
 
-    // ✅ color
+    // ✅ Color scale
     const color = scaleOrdinal(schemeDark2);
 
     const nodes = root.descendants();
@@ -37,51 +37,73 @@ export function TreeMap(props) {
 
                     return (
                         <g key={i}>
-                            {/* ✅ RECTANGLES (parent + child) */}
+                            {/* ✅ RECTANGLE */}
                             <rect
                                 x={d.x0}
                                 y={d.y0}
                                 width={width}
                                 height={height}
-                                fill={d.depth === 1 ? color(d.data.name) : "none"}
-                                stroke="#333"
-                                strokeWidth={d.depth === 0 ? 2 : 1}
 
-                                // ✅ HOVER EFFECT
+                                // 🔥 ONLY color parent level
+                                fill={
+                                    d.depth === 1
+                                        ? color(d.data.name)
+                                        : d.depth === 2
+                                        ? color(d.parent.data.name)
+                                        : "none"
+                                }
+
+                                // 🔥 ONLY outline parent (big rectangles)
+                                stroke={d.depth === 1 ? "#333" : "none"}
+                                strokeWidth={d.depth === 1 ? 2 : 0}
+
+                                // ✅ HOVER EFFECT (only for leaf nodes)
                                 onMouseOver={(e) => {
-                                    e.target.setAttribute("fill", "red");
+                                    if (d.depth === 2) {
+                                        e.target.setAttribute("fill", "red");
+                                    }
                                 }}
                                 onMouseOut={(e) => {
-                                    e.target.setAttribute(
-                                        "fill",
-                                        d.depth === 1 ? color(d.data.name) : "none"
-                                    );
+                                    if (d.depth === 2) {
+                                        e.target.setAttribute(
+                                            "fill",
+                                            color(d.parent.data.name)
+                                        );
+                                    }
                                 }}
                             />
 
-                            {/* ✅ TEXT (only for leaves) */}
-                            {d.depth === 2 && width > 50 && height > 30 && (
+                            {/* ✅ BIG LABEL (group label) */}
+                            {d.depth === 1 && (
+                                <text
+                                    x={(d.x0 + d.x1) / 2}
+                                    y={(d.y0 + d.y1) / 2}
+                                    textAnchor="middle"
+                                    fontSize="28px"
+                                    fill="black"
+                                    opacity={0.25}
+                                >
+                                    {d.data.name}
+                                </text>
+                            )}
+
+                            {/* ✅ LEAF TEXT (with percentage) */}
+                            {d.depth === 2 && width > 60 && height > 40 && (
                                 <text
                                     x={d.x0 + 5}
                                     y={d.y0 + 15}
                                     fontSize="12px"
                                     fill="white"
                                 >
-                                    {d.data.name}: {d.value}
-                                </text>
-                            )}
-
-                            {/* ✅ BIG LABEL (category like heart_disease: 0) */}
-                            {d.depth === 1 && (
-                                <text
-                                    x={(d.x0 + d.x1) / 2}
-                                    y={(d.y0 + d.y1) / 2}
-                                    textAnchor="middle"
-                                    fontSize="30px"
-                                    fill="black"
-                                    opacity={0.3}
-                                >
-                                    {d.data.name}
+                                    <tspan x={d.x0 + 5} dy="0">
+                                        {d.data.name}
+                                    </tspan>
+                                    <tspan x={d.x0 + 5} dy="1.2em">
+                                        Value: {d.value}
+                                    </tspan>
+                                    <tspan x={d.x0 + 5} dy="1.2em">
+                                        ({((d.value / root.value) * 100).toFixed(1)}%)
+                                    </tspan>
                                 </text>
                             )}
                         </g>
